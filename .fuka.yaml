@@ -1,0 +1,18 @@
+BaseUrl: https://api.sample.com
+ApiSpecs:
+  - Name: SampleList
+    Method: GET
+    Path: /sample-api/v1/sample
+  - Name: SampleDetail
+    Method: GET
+    Path: /sample-api/v1/sample/1
+RequestHeaders:
+  - Key: sample-header
+    Value: sample-value
+Scenarios:
+  - Name: addUser
+    Count: 100
+    Thread: 10
+  - Name: stress
+    Count: 200
+    Thread: 50

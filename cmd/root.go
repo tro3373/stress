@@ -1,5 +1,5 @@
 /*
-Copyright 息 2020 NAME HERE <EMAIL ADDRESS>
+Copyright 2020 sample sample@gmail.com
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ limitations under the License.
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
@@ -23,15 +24,6 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
 )
-
-var cfgFile string
-
-type Config struct {
-	key1 string
-	key2 string
-}
-
-var config Config
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -57,14 +49,16 @@ func Execute() {
 	}
 }
 
+var configFile string
+var config Config
+
 func init() {
 	cobra.OnInitialize(initConfig)
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.fuka.yaml)")
+	rootCmd.PersistentFlags().StringVar(&configFile, "config", "", "config file (default is $HOME/.fuka.yaml)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -73,9 +67,9 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if cfgFile != "" {
+	if configFile != "" {
 		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
+		viper.SetConfigFile(configFile)
 	} else {
 		// Find home directory.
 		home, err := homedir.Dir()
@@ -86,17 +80,36 @@ func initConfig() {
 
 		// Search config in home directory with name ".fuka" (without extension).
 		viper.AddConfigPath(home)
+		viper.AddConfigPath(".")
 		viper.SetConfigName(".fuka")
 	}
+	// viper.SetConfigType("yml")
 
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		fmt.Printf("> Loading config from %s.\n", viper.ConfigFileUsed())
 		if err := viper.Unmarshal(&config); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
+		fmt.Printf("> Loaded config %s.\n", Pretty(config, ""))
 	}
+}
+
+func Pretty(data interface{}, sep string) []byte {
+	// if data.(type) == string {
+	// }
+	var p []byte
+	if sep == "" {
+		sep = "  "
+	}
+	//    var err := error
+	p, err := json.MarshalIndent(data, "", sep)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	return p
 }

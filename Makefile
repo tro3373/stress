@@ -1,8 +1,8 @@
-NAME := sample
+NAME := go-cobra-example
 VERSION := v0.0.1
 # REVISION := $(shell git rev-parse --short HEAD)
 OSARCH := "darwin/amd64 linux/amd64"
-PACKAGE := github.com/tro3373/go-cobra-example
+PACKAGE := github.com/tro3373/$(NAME)
 
 ifndef GOBIN
 GOBIN := $(shell echo "$${GOPATH%%:*}/bin")
@@ -12,7 +12,7 @@ COBRA := $(GOBIN)/cobra
 
 $(COBRA): ; @go get -v -u github.com/spf13/cobra/cobra
 
-.DEFAULT_GOAL := build
+.DEFAULT_GOAL := run
 
 .PHONY: init-gen
 init-gen: $(COBRA)

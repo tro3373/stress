@@ -16,8 +16,13 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	// "os"
+	"os"
+
+	// "io/ioutil"
+	// "net/http"
 
 	"github.com/spf13/cobra"
 	// "github.com/spf13/viper"
@@ -34,10 +39,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("hello called")
-
-		// fmt.Println(">> Config:", config)
-		fmt.Printf("cfgFile: %s\nconfig: %#v", cfgFile, config)
+		start()
 	},
 }
 
@@ -53,4 +55,34 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// helloCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func start() {
+	fmt.Println(">> hello called")
+	fmt.Printf(">>> %#v\n", config)
+	res, err := Req("ContentsDetail")
+	if err != nil {
+		os.Exit(1)
+	}
+	// fmt.Printf("> res %s.\n", Pretty(res, ""))
+
+	// // fmt.Println(string(byteArray))
+	// // fmt.Println(Pretty(string(byteArray), ""))
+	var buf bytes.Buffer
+	err = json.Indent(&buf, []byte(res), "", "  ")
+	if err != nil {
+		fmt.Println(">> Failed to parse json", err)
+		os.Exit(1)
+		// return HandleReqError("parse json", err)
+	}
+	fmt.Println(">> Res:", buf.String())
+
+	// url := "https://dev.app.tenco.co.jp/contents-api/v1/frontend/contents/39"
+	// req, _ := http.NewRequest("GET", url, nil)
+	// req.Header.Set("sample-header", "sample-value")
+	// client := new(http.Client)
+	// resp, _ := client.Do(req)
+	// defer resp.Body.Close()
+	// byteArray, _ := ioutil.ReadAll(resp.Body)
+	// fmt.Println(string(byteArray))
 }
