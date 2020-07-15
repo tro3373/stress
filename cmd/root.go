@@ -16,7 +16,6 @@ limitations under the License.
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
@@ -96,20 +95,4 @@ func initConfig() {
 		}
 		fmt.Printf("> Loaded config %s.\n", Pretty(config, ""))
 	}
-}
-
-func Pretty(data interface{}, sep string) []byte {
-	// if data.(type) == string {
-	// }
-	var p []byte
-	if sep == "" {
-		sep = "  "
-	}
-	//    var err := error
-	p, err := json.MarshalIndent(data, "", sep)
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-	return p
 }
