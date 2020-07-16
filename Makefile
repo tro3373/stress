@@ -37,7 +37,7 @@ build:
 
 .PHONY: help
 help:
-	@go run ./main.go t
+	@go run ./main.go --help
 
 .PHONY: run
 run:

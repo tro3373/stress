@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
@@ -21,8 +22,8 @@ func (res *Res) String() string {
 	var buf bytes.Buffer
 	err := json.Indent(&buf, []byte(res.json), "", "  ")
 	if err != nil {
-		fmt.Println(">> Failed to parse json", err)
-		return err.Error()
+		log.Println(">> Failed to parse json", err)
+		return res.json
 	}
 	return buf.String()
 }
@@ -37,8 +38,8 @@ func GetApiSpec(key string) (*ApiSpec, error) {
 }
 
 func HandleReqError(message string, err error) (*Res, error) {
-	fmt.Println(">> Failed to execute ", message, err)
-	return &Res{""}, err
+	log.Println(">> Failed to execute ", message, err)
+	return nil, err
 }
 
 func Req(key string) (*Res, error) {
@@ -47,7 +48,7 @@ func Req(key string) (*Res, error) {
 		return HandleReqError("GetApiSpec", err)
 	}
 	url := config.BaseUrl + spec.Path
-	fmt.Printf(">>> Requesting %s, url: %s, method: %s, ApiSpec: %#v\n",
+	log.Printf(">>> Requesting %s, url: %s, method: %s, ApiSpec: %#v\n",
 		key, url, spec.Method, spec)
 
 	req, err := http.NewRequest(spec.Method, url, nil)
