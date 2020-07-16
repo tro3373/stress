@@ -1,13 +1,31 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	// "os"
-	// "github.com/spf13/cobra"
-	// "github.com/spf13/viper"
 )
+
+const (
+	ContentsList   = "ContentsList"
+	ContentsDetail = "ContentsDetail"
+)
+
+type Res struct {
+	json string
+}
+
+func (res *Res) String() string {
+	var buf bytes.Buffer
+	err := json.Indent(&buf, []byte(res.json), "", "  ")
+	if err != nil {
+		fmt.Println(">> Failed to parse json", err)
+		return err.Error()
+	}
+	return buf.String()
+}
 
 func GetApiSpec(key string) (*ApiSpec, error) {
 	for _, spec := range config.ApiSpecs {
@@ -18,25 +36,23 @@ func GetApiSpec(key string) (*ApiSpec, error) {
 	return nil, fmt.Errorf(">> No such api exist. %s", key)
 }
 
-func HandleReqError(message string, err error) (string, error) {
-	fmt.Println(">> Failed to ", message, err)
-	return "", err
+func HandleReqError(message string, err error) (*Res, error) {
+	fmt.Println(">> Failed to execute ", message, err)
+	return &Res{""}, err
 }
 
-func Req(key string) (string, error) {
+func Req(key string) (*Res, error) {
 	spec, err := GetApiSpec(key)
 	if err != nil {
 		return HandleReqError("GetApiSpec", err)
-		// fmt.Println(err)
-		// os.Exit(1)
 	}
 	url := config.BaseUrl + spec.Path
-	fmt.Printf(">>> Requesting url: %s, method: %s, ApiSpec: %#v\n", url, spec.Method, spec)
+	fmt.Printf(">>> Requesting %s, url: %s, method: %s, ApiSpec: %#v\n",
+		key, url, spec.Method, spec)
+
 	req, err := http.NewRequest(spec.Method, url, nil)
 	if err != nil {
-		return HandleReqError("create NewRequest", err)
-		// fmt.Println(">> Failed to create NewRequest", err)
-		// os.Exit(1)
+		return HandleReqError("http.NewRequest", err)
 	}
 	for _, rh := range config.RequestHeaders {
 		req.Header.Set(rh.Key, rh.Value)
@@ -45,15 +61,11 @@ func Req(key string) (string, error) {
 	resp, err := client.Do(req)
 	if err != nil {
 		return HandleReqError("client.Do", err)
-		// fmt.Println(">> Failed to client.Do", err)
-		// os.Exit(1)
 	}
 	defer resp.Body.Close()
 	byteArray, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		// fmt.Println(">> Failed to ReadAll resp.Body", err)
-		// os.Exit(1)
-		return HandleReqError("ReadAll resp.Body", err)
+		return HandleReqError("ioutil.ReadAll from resp.Body", err)
 	}
-	return string(byteArray), nil
+	return &Res{string(byteArray)}, nil
 }

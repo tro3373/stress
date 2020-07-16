@@ -93,6 +93,6 @@ func initConfig() {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		fmt.Printf("> Loaded config %s.\n", Pretty(config, ""))
+		fmt.Println("> Loaded config:", config)
 	}
 }

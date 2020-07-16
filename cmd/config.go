@@ -1,5 +1,9 @@
 package cmd
 
+import (
+	"encoding/json"
+)
+
 type Config struct {
 	BaseUrl        string
 	ApiSpecs       []ApiSpec
@@ -19,4 +23,13 @@ type Scenario struct {
 	Name   string
 	Count  int
 	Thread int
+}
+
+func (config Config) String() string {
+	var p []byte
+	p, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return err.Error()
+	}
+	return string(p)
 }

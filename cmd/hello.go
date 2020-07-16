@@ -16,8 +16,8 @@ limitations under the License.
 package cmd
 
 import (
-	"bytes"
-	"encoding/json"
+	// "bytes"
+	// "encoding/json"
 	"fmt"
 	"os"
 
@@ -59,23 +59,23 @@ func init() {
 
 func start() {
 	fmt.Println(">> hello called")
-	fmt.Printf(">>> %#v\n", config)
-	res, err := Req("ContentsDetail")
+	// fmt.Printf(">>> %#v\n", config)
+	res, err := Req(ContentsDetail)
 	if err != nil {
 		os.Exit(1)
 	}
-	// fmt.Printf("> res %s.\n", Pretty(res, ""))
+	fmt.Printf("> res %s.\n", res)
 
 	// // fmt.Println(string(byteArray))
 	// // fmt.Println(Pretty(string(byteArray), ""))
-	var buf bytes.Buffer
-	err = json.Indent(&buf, []byte(res), "", "  ")
-	if err != nil {
-		fmt.Println(">> Failed to parse json", err)
-		os.Exit(1)
-		// return HandleReqError("parse json", err)
-	}
-	fmt.Println(">> Res:", buf.String())
+	// var buf bytes.Buffer
+	// err = json.Indent(&buf, []byte(res.json), "", "  ")
+	// if err != nil {
+	// 	fmt.Println(">> Failed to parse json", err)
+	// 	os.Exit(1)
+	// 	// return HandleReqError("parse json", err)
+	// }
+	// fmt.Println(">> Res:", buf.String())
 
 	// url := "https://dev.app.tenco.co.jp/contents-api/v1/frontend/contents/39"
 	// req, _ := http.NewRequest("GET", url, nil)
