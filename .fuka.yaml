@@ -14,5 +14,7 @@ Scenarios:
     Count: 100
     Thread: 10
   - Name: stress
-    Count: 200
-    Thread: 50
+    # Count: 200
+    # Thread: 50
+    Count: 2
+    Thread: 2

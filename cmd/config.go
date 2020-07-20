@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 type Config struct {
@@ -33,4 +34,13 @@ func (config Config) String() string {
 		return err.Error()
 	}
 	return string(p)
+}
+
+func (config Config) GetScenarioConfig(key string) (*Scenario, error) {
+	for _, sc := range config.Scenarios {
+		if sc.Name == key {
+			return &sc, nil
+		}
+	}
+	return nil, fmt.Errorf("Failed to getScenarioConfig")
 }

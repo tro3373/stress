@@ -41,7 +41,7 @@ help:
 
 .PHONY: run
 run:
-	@go run ./main.go hello
+	@go run ./main.go stress
 
 # [Goでhttpリクエストを送信する方法](https://qiita.com/taizo/items/c397dbfed7215969b0a5)
 # https://qiita.com/so-heee/items/c739687ed2a609196a33
