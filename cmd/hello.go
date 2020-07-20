@@ -1,7 +1,11 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	// "reflect"
 
 	"github.com/spf13/cobra"
 )
@@ -37,9 +41,30 @@ func init() {
 
 func start() {
 	log.Println(">> hello called")
-	res, err := Req(ContentsDetail)
+	client := NewApiClient(config)
+	res, err := client.GetContentsDetail()
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("> res", res)
+	write(1, res.ReqNo, res.Json)
+	// write(3, res.ReqNo, res.Json)
+}
+
+func write(thNum, rqNum int, data string) {
+	path := outPath(config, 1, rqNum)
+	dir := filepath.Dir(path)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		os.Mkdir(path, 0755)
+	}
+	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	fmt.Fprintln(file, data)
+}
+
+func outPath(config Config, thNum, rqNum int) string {
+	path := filepath.Join(config.LogDir, fmt.Sprintf("ThreadNo_%03d", thNum), fmt.Sprintf("ReqNo_%03d.txt", rqNum))
+	return path
 }

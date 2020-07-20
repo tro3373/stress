@@ -8,6 +8,7 @@ type Config struct {
 	BaseUrl        string
 	ApiSpecs       []ApiSpec
 	RequestHeaders []RequestHeader
+	LogDir         string
 	Scenarios      []Scenario
 }
 type ApiSpec struct {
