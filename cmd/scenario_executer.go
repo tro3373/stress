@@ -36,7 +36,7 @@ func (s *ScenarioExecuter) Start() {
 	if err != nil {
 		log.Fatal("Failed to GetContentsDetail", err)
 	}
-	s.write(res.ReqNo, res.Json)
+	s.write(res.ReqNo, res.Out.(string))
 }
 
 func (s *ScenarioExecuter) write(rqNum int, data string) {

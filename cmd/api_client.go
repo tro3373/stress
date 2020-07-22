@@ -2,11 +2,15 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/tro3373/fuka/cmd/backend"
 )
 
 type Res struct {
@@ -38,8 +42,29 @@ func NewApiClient(config Config) *ApiClient {
 func (client *ApiClient) GetContentsList() (*Res, error) {
 	return client.req("ContentsList")
 }
-func (client *ApiClient) GetContentsDetail() (*Res, error) {
-	return client.req("ContentsDetail")
+
+// func (client *ApiClient) GetContentsDetail() (*Res, error) {
+// 	return client.req("ContentsDetail")
+// }
+func (client *ApiClient) GetContentsDetail() (*backend.Res, error) {
+	// return client.req("ContentsDetail")
+	headers := []backend.Header{}
+	for _, rh := range config.RequestHeaders {
+		addHeader := backend.NewHeader(rh.Key, rh.Value)
+		headers = append(headers, *addHeader)
+	}
+	c, err := backend.NewClient(config.BaseUrl, &headers, false, log.New(os.Stderr, "", log.LstdFlags))
+	if err != nil {
+		return nil, err
+	}
+
+	spec, err := client.getApiSpec("ContentsDetail")
+	if err != nil {
+		return nil, err
+	}
+
+	ctx := context.Background()
+	return c.Request(ctx, spec.Method, spec.Path, nil, nil)
 }
 
 func (client *ApiClient) req(key string) (*Res, error) {
