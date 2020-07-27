@@ -1,53 +1,24 @@
 package cmd
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 
 	"github.com/tro3373/fuka/cmd/backend"
 )
 
-type Res struct {
-	Json  string
-	ReqNo int
-}
-
-func (res *Res) String() string {
-	var buf bytes.Buffer
-	err := json.Indent(&buf, []byte(res.Json), "", "  ")
-	if err != nil {
-		log.Println(">> Failed to parse json", err)
-		return res.Json
-	}
-	return fmt.Sprintf("ReqNo: %d, json:%s", res.ReqNo, buf.String())
-}
-
 type ApiClient struct {
+	bClient        *backend.Client
 	BaseUrl        string
 	ApiSpecs       []ApiSpec
 	RequestHeaders []RequestHeader
 	ReqNo          int
 }
 
-func NewApiClient(config Config) *ApiClient {
-	return &ApiClient{config.BaseUrl, config.ApiSpecs, config.RequestHeaders, 0}
-}
+func NewApiClient(config Config) (*ApiClient, error) {
 
-func (client *ApiClient) GetContentsList() (*Res, error) {
-	return client.req("ContentsList")
-}
-
-// func (client *ApiClient) GetContentsDetail() (*Res, error) {
-// 	return client.req("ContentsDetail")
-// }
-func (client *ApiClient) GetContentsDetail() (*backend.Res, error) {
-	// return client.req("ContentsDetail")
 	headers := []backend.Header{}
 	for _, rh := range config.RequestHeaders {
 		addHeader := backend.NewHeader(rh.Key, rh.Value)
@@ -57,6 +28,21 @@ func (client *ApiClient) GetContentsDetail() (*backend.Res, error) {
 	if err != nil {
 		return nil, err
 	}
+	return &ApiClient{c, config.BaseUrl, config.ApiSpecs, config.RequestHeaders, 0}, nil
+}
+
+func (client *ApiClient) GetContentsList() (*backend.Res, error) {
+
+	spec, err := client.getApiSpec("ContentsList")
+	if err != nil {
+		return nil, err
+	}
+
+	ctx := context.Background()
+	return client.bClient.Request(ctx, spec.Method, spec.Path, nil, nil)
+}
+
+func (client *ApiClient) GetContentsDetail() (*backend.Res, error) {
 
 	spec, err := client.getApiSpec("ContentsDetail")
 	if err != nil {
@@ -64,49 +50,7 @@ func (client *ApiClient) GetContentsDetail() (*backend.Res, error) {
 	}
 
 	ctx := context.Background()
-	return c.Request(ctx, spec.Method, spec.Path, nil, nil)
-}
-
-func (client *ApiClient) req(key string) (*Res, error) {
-	spec, err := client.getApiSpec(key)
-	if err != nil {
-		return client.handleReqError("getApiSpec", err)
-	}
-	url := client.BaseUrl + spec.Path
-	log.Printf(">>> Requesting %s, url: %s, method: %s, ApiSpec: %#v\n",
-		key, url, spec.Method, spec)
-
-	client.ReqNo++
-	reqNo := client.ReqNo
-
-	req, err := http.NewRequest(spec.Method, url, nil)
-	if err != nil {
-		return client.handleReqError("http.NewRequest", err)
-	}
-	for _, rh := range client.RequestHeaders {
-		req.Header.Set(rh.Key, rh.Value)
-	}
-	hClient := new(http.Client)
-	resp, err := hClient.Do(req)
-	if err != nil {
-		return client.handleReqError("client.Do", err)
-	}
-	defer resp.Body.Close()
-	byteArray, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return client.handleReqError("ioutil.ReadAll from resp.Body", err)
-	}
-	body := string(byteArray)
-	if resp.StatusCode != 200 {
-		log.Printf(">>> Invalid StatusCode body: %s\n", body)
-		return client.handleReqError("validate reps.StatusCode", fmt.Errorf("invalid status code: %d", resp.StatusCode))
-	}
-	return &Res{body, reqNo}, nil
-}
-
-func (client *ApiClient) handleReqError(message string, err error) (*Res, error) {
-	err = fmt.Errorf("ReqNo:%d, Failed to execute %s, %w", client.ReqNo, message, err)
-	return nil, err
+	return client.bClient.Request(ctx, spec.Method, spec.Path, nil, nil)
 }
 
 func (client *ApiClient) getApiSpec(key string) (*ApiSpec, error) {

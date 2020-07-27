@@ -31,13 +31,25 @@ func (s *ScenarioExecuter) String() string {
 }
 
 func (s *ScenarioExecuter) Start() {
+	client, err := NewApiClient(config)
+	if err != nil {
+		log.Fatal("Failed NewApiClient", err)
+	}
+	for i := 0; i < s.loopNum; i++ {
+		s.startScenario(client)
+	}
 	defer s.wg.Done()
-	client := NewApiClient(config)
+}
+
+func (s *ScenarioExecuter) startScenario(client *ApiClient) error {
 	res, err := client.GetContentsDetail()
 	if err != nil {
-		log.Fatal("Failed to GetContentsDetail", err)
+		err = fmt.Errorf("Failed %s, %w", "GetContentsDetail", err)
+		return err
 	}
-	s.saveResult(res.ReqNo, res.Out.(string))
+	s.saveResult(res.ReqNo, *res.Out.(*string))
+
+	return nil
 }
 
 func (s *ScenarioExecuter) saveResult(rqNum int, data string) {
