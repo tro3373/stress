@@ -47,7 +47,7 @@ func start() {
 	for {
 		thNum++
 		wg.Add(1)
-		se := NewScenarioExecuter(start, thNum, sc.Count, wg)
+		se := NewScenarioExecuter(start, thNum, sc.LoopNum, wg)
 		log.Println(">>> Starting ", se.String())
 		go se.Start()
 		if thNum >= sc.Thread {

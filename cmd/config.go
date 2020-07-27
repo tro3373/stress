@@ -22,9 +22,9 @@ type RequestHeader struct {
 	Value string
 }
 type Scenario struct {
-	Name   string
-	Count  int
-	Thread int
+	Name    string
+	LoopNum int
+	Thread  int
 }
 
 func (config Config) String() string {

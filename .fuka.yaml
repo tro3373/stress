@@ -11,10 +11,10 @@ RequestHeaders:
     Value: sample-value
 Scenarios:
   - Name: addUser
-    Count: 100
+    LoopNum: 100
     Thread: 10
   - Name: stress
-    # Count: 200
+    # LoopNum: 200
     # Thread: 50
-    Count: 2
+    LoopNum: 2
     Thread: 2
