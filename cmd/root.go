@@ -10,7 +10,7 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "fuka",
+	Use:   "stress",
 	Short: "stress test for api",
 	Long: `stress test cli command for api.
 written by go using cobra framework.`,
@@ -36,7 +36,7 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&configFile, "config", "", "config file (default is $HOME/.fuka.yaml)")
+	rootCmd.PersistentFlags().StringVar(&configFile, "config", "", "config file (default is $HOME/.stress.yaml)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -55,10 +55,10 @@ func initConfig() {
 			log.Fatal(err)
 		}
 
-		// Search config in home directory with name ".fuka" (without extension).
+		// Search config in home directory with name ".stress" (without extension).
 		viper.AddConfigPath(home)
 		viper.AddConfigPath(".")
-		viper.SetConfigName(".fuka")
+		viper.SetConfigName(".stress")
 	}
 	// viper.SetConfigType("yml")
 

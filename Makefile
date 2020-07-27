@@ -1,4 +1,4 @@
-NAME := go-cobra-example
+NAME := stress
 VERSION := v0.0.1
 # REVISION := $(shell git rev-parse --short HEAD)
 OSARCH := "darwin/amd64 linux/amd64"

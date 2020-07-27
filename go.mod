@@ -1,4 +1,4 @@
-module github.com/tro3373/go-cobra-example
+module github.com/tro3373/stress
 
 go 1.14
 

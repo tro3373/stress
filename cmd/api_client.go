@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/tro3373/fuka/cmd/backend"
+	"github.com/tro3373/stress/cmd/backend"
 )
 
 type ApiClient struct {

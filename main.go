@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2020 sample sample@gmail.com
+Copyright (c) 2020 tro3373@gmail.com
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@ limitations under the License.
 */
 package main
 
-import "github.com/tro3373/go-cobra-example/cmd"
+import "github.com/tro3373/stress/cmd"
 
 func main() {
 	cmd.Execute()
