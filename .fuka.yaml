@@ -9,6 +9,7 @@ ApiSpecs:
 RequestHeaders:
   - Key: sample-header
     Value: sample-value
+LogDir: logs
 Scenarios:
   - Name: addUser
     LoopNum: 100
