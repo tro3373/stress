@@ -36,11 +36,11 @@ func (s *ScenarioExecuter) Start() {
 	if err != nil {
 		log.Fatal("Failed to GetContentsDetail", err)
 	}
-	s.write(res.ReqNo, res.Out.(string))
+	s.saveResult(res.ReqNo, res.Out.(string))
 }
 
-func (s *ScenarioExecuter) write(rqNum int, data string) {
-	path := s.outPath(rqNum)
+func (s *ScenarioExecuter) saveResult(rqNum int, data string) {
+	path := s.getOutPutPath(rqNum)
 	dir := filepath.Dir(path)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		err := os.MkdirAll(dir, 0755)
