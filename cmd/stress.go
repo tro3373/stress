@@ -3,6 +3,7 @@ package cmd
 import (
 	"log"
 	"sync"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -33,6 +34,7 @@ func init() {
 
 func start() {
 	log.Println(">> stress test start")
+	start := time.Now().Format("20060102_030405")
 
 	sc, err := config.GetScenarioConfig("stress")
 	if err != nil {
@@ -45,7 +47,7 @@ func start() {
 	for {
 		thNum++
 		wg.Add(1)
-		se := NewScenarioExecuter(thNum, sc.Count, wg)
+		se := NewScenarioExecuter(start, thNum, sc.Count, wg)
 		log.Println(">>> Starting ", se.String())
 		go se.Start()
 		if thNum >= sc.Thread {

@@ -9,10 +9,11 @@ import (
 )
 
 type ScenarioExecuter struct {
-	thName  string
-	thNum   int
-	loopNum int
-	wg      *sync.WaitGroup
+	startTime string
+	thName    string
+	thNum     int
+	loopNum   int
+	wg        *sync.WaitGroup
 }
 
 const (
@@ -20,9 +21,9 @@ const (
 	resFNameF   = "ReqNo_%03d.txt"
 )
 
-func NewScenarioExecuter(thNum, loopNum int, wg *sync.WaitGroup) *ScenarioExecuter {
+func NewScenarioExecuter(start string, thNum, loopNum int, wg *sync.WaitGroup) *ScenarioExecuter {
 	thName := fmt.Sprintf(threadNameF, thNum)
-	return &ScenarioExecuter{thName, thNum, loopNum, wg}
+	return &ScenarioExecuter{start, thName, thNum, loopNum, wg}
 }
 
 func (s *ScenarioExecuter) String() string {
@@ -56,7 +57,7 @@ func (s *ScenarioExecuter) saveResult(rqNum int, data string) {
 	fmt.Fprintln(file, data)
 }
 
-func (s *ScenarioExecuter) outPath(rqNum int) string {
-	path := filepath.Join(config.LogDir, s.thName, fmt.Sprintf(resFNameF, rqNum))
+func (s *ScenarioExecuter) getOutPutPath(rqNum int) string {
+	path := filepath.Join(config.LogDir, s.startTime, s.thName, fmt.Sprintf(resFNameF, rqNum))
 	return path
 }
