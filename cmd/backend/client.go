@@ -14,6 +14,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"time"
 )
 
 type Client struct {
@@ -71,7 +72,13 @@ func NewHeader(key, val string) *Header {
 	return &Header{key, val}
 }
 
-func (c *Client) newRequest(ctx context.Context, reqMethod, reqPath string, body io.Reader) (*http.Request, error) {
+func (c *Client) newRequest(ctx context.Context, reqMethod, reqPath string, body io.Reader, timeout time.Duration) (*http.Request, error) {
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	c.ReqNo++
 	u := *c.URL
@@ -92,9 +99,9 @@ func (c *Client) newRequest(ctx context.Context, reqMethod, reqPath string, body
 	return req, nil
 }
 
-func (c *Client) Request(ctx context.Context, reqMethod, reqPath string, reqBody io.Reader, out interface{}) (*Res, error) {
+func (c *Client) Request(ctx context.Context, reqMethod, reqPath string, reqBody io.Reader, out interface{}, timeout time.Duration) (*Res, error) {
 
-	req, err := c.newRequest(ctx, reqMethod, reqPath, reqBody)
+	req, err := c.newRequest(ctx, reqMethod, reqPath, reqBody, timeout)
 	if err != nil {
 		return c.handleError("newRequest", err)
 	}
