@@ -72,13 +72,7 @@ func NewHeader(key, val string) *Header {
 	return &Header{key, val}
 }
 
-func (c *Client) newRequest(ctx context.Context, reqMethod, reqPath string, body io.Reader, timeout time.Duration) (*http.Request, error) {
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
+func (c *Client) createNewRequest(ctx context.Context, reqMethod, reqPath string, body io.Reader) (*http.Request, error) {
 
 	c.ReqNo++
 	u := *c.URL
@@ -99,11 +93,17 @@ func (c *Client) newRequest(ctx context.Context, reqMethod, reqPath string, body
 	return req, nil
 }
 
-func (c *Client) Request(ctx context.Context, reqMethod, reqPath string, reqBody io.Reader, out interface{}, timeout time.Duration) (*Res, error) {
+func (c *Client) Request(ctx context.Context, reqMethod, reqPath string, reqBody io.Reader, out interface{}, timeout int) (*Res, error) {
 
-	req, err := c.newRequest(ctx, reqMethod, reqPath, reqBody, timeout)
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
+	defer cancel()
+
+	req, err := c.createNewRequest(ctx, reqMethod, reqPath, reqBody)
 	if err != nil {
-		return c.handleError("newRequest", err)
+		return c.handleError("createNewRequest", err)
 	}
 
 	resp, err := c.HTTPClient.Do(req)
