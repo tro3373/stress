@@ -7,6 +7,7 @@ import (
 
 type Config struct {
 	BaseUrl        string
+	TimeoutSec     int
 	ApiSpecs       []ApiSpec
 	RequestHeaders []RequestHeader
 	LogDir         string

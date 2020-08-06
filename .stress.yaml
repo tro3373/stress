@@ -1,4 +1,5 @@
 BaseUrl: https://api.sample.com
+TimeoutSec: 3600
 ApiSpecs:
   - Name: SampleList
     Method: GET
