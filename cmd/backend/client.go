@@ -106,12 +106,28 @@ func (c *Client) Request(ctx context.Context, reqMethod, reqPath string, reqBody
 		return c.handleError("buildNewRequest", err)
 	}
 
+	ch := make(chan ChanRes)
+
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return c.handleError("HTTPClient.Do", err)
 	}
 
 	return c.decodeBody(resp, out, nil)
+}
+
+type ChanRes struct {
+	resp *http.Response
+	err  error
+}
+
+func (c *Client) doRequest(ch chan ChanRes, req *http.Request) {
+	defer close(ch)
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		ch <- ChanRes{resp, err}
+		// return c.handleError("HTTPClient.Do", err)
+	}
 }
 
 func (c *Client) handleError(message string, err error) (*Res, error) {
