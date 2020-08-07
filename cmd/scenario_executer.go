@@ -31,42 +31,48 @@ func (s *ScenarioExecuter) String() string {
 }
 
 func (s *ScenarioExecuter) Start() {
+	defer s.wg.Done()
 	client, err := NewApiClient(config)
 	if err != nil {
-		log.Fatal("Failed NewApiClient", err)
+		log.Println("Failed NewApiClient", err)
+		return
 	}
 	for i := 0; i < s.loopNum; i++ {
-		s.startScenario(client)
+		err = s.startScenario(client)
+		if err != nil {
+			log.Println("Failed NewApiClient", err)
+			return
+		}
 	}
-	defer s.wg.Done()
 }
 
 func (s *ScenarioExecuter) startScenario(client *ApiClient) error {
+	log.Println("start scenario!")
 	res, err := client.GetContentsDetail()
 	if err != nil {
 		err = fmt.Errorf("Failed %s, %w", "GetContentsDetail", err)
 		return err
 	}
-	s.saveResult(res.ReqNo, *res.Out.(*string))
-
-	return nil
+	log.Println("Saving result")
+	return s.saveResult(res.ReqNo, *res.Out.(*string))
 }
 
-func (s *ScenarioExecuter) saveResult(rqNum int, data string) {
+func (s *ScenarioExecuter) saveResult(rqNum int, data string) error {
 	path := s.getOutPutPath(rqNum)
 	dir := filepath.Dir(path)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		err := os.MkdirAll(dir, 0755)
 		if err != nil {
-			log.Fatal("Failed to create ", dir, err)
+			return fmt.Errorf("Failed to create directory %s, %w", dir, err)
 		}
 	}
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("Failed to OpenFile %s, %w", path, err)
 	}
 	defer file.Close()
 	fmt.Fprintln(file, data)
+	return nil
 }
 
 func (s *ScenarioExecuter) getOutPutPath(rqNum int) string {

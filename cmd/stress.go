@@ -33,7 +33,7 @@ func init() {
 }
 
 func start() {
-	log.Println(">> stress test start")
+	log.Println(">> stress start")
 	start := time.Now().Format("20060102_030405")
 
 	sc, err := config.GetScenarioConfig("stress")
@@ -56,5 +56,5 @@ func start() {
 	}
 	wg.Wait()
 
-	log.Println(">> stress test done")
+	log.Println(">> stress done")
 }

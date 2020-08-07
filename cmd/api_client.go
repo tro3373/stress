@@ -12,6 +12,7 @@ import (
 type ApiClient struct {
 	bClient        *backend.Client
 	BaseUrl        string
+	TimeoutSec     int
 	ApiSpecs       []ApiSpec
 	RequestHeaders []RequestHeader
 	ReqNo          int
@@ -28,7 +29,7 @@ func NewApiClient(config Config) (*ApiClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &ApiClient{c, config.BaseUrl, config.ApiSpecs, config.RequestHeaders, 0}, nil
+	return &ApiClient{c, config.BaseUrl, config.TimeoutSec, config.ApiSpecs, config.RequestHeaders, 0}, nil
 }
 
 func (client *ApiClient) GetContentsList() (*backend.Res, error) {
@@ -39,7 +40,7 @@ func (client *ApiClient) GetContentsList() (*backend.Res, error) {
 	}
 
 	ctx := context.Background()
-	return client.bClient.Request(ctx, spec.Method, spec.Path, nil, nil)
+	return client.bClient.Request(ctx, spec.Method, spec.Path, nil, nil, client.TimeoutSec)
 }
 
 func (client *ApiClient) GetContentsDetail() (*backend.Res, error) {
@@ -50,7 +51,7 @@ func (client *ApiClient) GetContentsDetail() (*backend.Res, error) {
 	}
 
 	ctx := context.Background()
-	return client.bClient.Request(ctx, spec.Method, spec.Path, nil, nil)
+	return client.bClient.Request(ctx, spec.Method, spec.Path, nil, nil, client.TimeoutSec)
 }
 
 func (client *ApiClient) getApiSpec(key string) (*ApiSpec, error) {
