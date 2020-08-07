@@ -131,7 +131,7 @@ func (c *Client) Request(ctx context.Context, reqMethod, reqPath string, reqBody
 	c.Logger.Println(">>> Request Selecting")
 	select {
 	case cr := <-ch:
-		c.Logger.Println(">>> chan received!")
+		c.Logger.Println(">>> chan received!", cr)
 		if cr.err != nil {
 			return c.handleError("HTTPClient.Do error", err)
 		}
@@ -146,6 +146,13 @@ func (c *Client) Request(ctx context.Context, reqMethod, reqPath string, reqBody
 type ChanRes struct {
 	resp *http.Response
 	err  error
+}
+
+func (cr ChanRes) String() string {
+	if cr.err != nil {
+		return "[ChanRes] Abnomal"
+	}
+	return "[ChanRes] Nomal"
 }
 
 // func (c *Client) doRequest(ch chan ChanRes, req *http.Request) {
@@ -199,7 +206,7 @@ type Res struct {
 	Out        interface{}
 }
 
-func (res *Res) String() string {
+func (res Res) String() string {
 	switch res.Out.(type) {
 	case string:
 		outStr := res.Out.(string)
