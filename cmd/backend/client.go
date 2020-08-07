@@ -78,12 +78,14 @@ func (c *Client) buildNewRequest(ctx context.Context, reqMethod, reqPath string,
 	u := *c.URL
 	u.Path = path.Join(c.URL.Path, reqPath)
 
-	req, err := http.NewRequest(reqMethod, u.String(), body)
+	// req, err := http.NewRequest(reqMethod, u.String(), body)
+	// req = req.WithContext(ctx)
+	req, err := http.NewRequestWithContext(ctx, reqMethod, u.String(), body)
 	if err != nil {
 		return nil, err
 	}
-
-	req = req.WithContext(ctx)
+	// https://qiita.com/atijust/items/63676309c7b3d5df5948
+	req.Cancel = ctx.Done()
 
 	// req.SetBasicAuth(c.Username, c.Password)
 	for _, rh := range *c.Headers {
@@ -95,9 +97,14 @@ func (c *Client) buildNewRequest(ctx context.Context, reqMethod, reqPath string,
 
 func (c *Client) Request(ctx context.Context, reqMethod, reqPath string, reqBody io.Reader, out interface{}, timeout int) (*Res, error) {
 
+	c.Logger.Println(">>> Request Start")
+
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	// see https://deeeet.com/writing/2016/07/22/context/
+	// see https://qiita.com/marnie_ms4/items/985d67c4c1b29e11fffc
+	// create cancellable ctx before Timeout
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
 	defer cancel()
 
@@ -106,14 +113,34 @@ func (c *Client) Request(ctx context.Context, reqMethod, reqPath string, reqBody
 		return c.handleError("buildNewRequest", err)
 	}
 
+	// resp, err := c.HTTPClient.Do(req)
+	// if err != nil {
+	// 	return c.handleError("HTTPClient.Do", err)
+	// }
+	// return c.handleError("HTTPClient.Do error", fmt.Errorf("Error: %s", ""))
+
 	ch := make(chan ChanRes)
+	go func() {
+		defer close(ch)
+		c.Logger.Println(">>> client doing!")
+		resp, err := c.HTTPClient.Do(req)
+		c.Logger.Println(">>> client done!")
+		ch <- ChanRes{resp, err}
+	}()
 
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return c.handleError("HTTPClient.Do", err)
+	c.Logger.Println(">>> Request Selecting")
+	select {
+	case cr := <-ch:
+		c.Logger.Println(">>> chan received!")
+		if cr.err != nil {
+			return c.handleError("HTTPClient.Do error", err)
+		}
+		c.Logger.Println(">>> decode response!")
+		return c.decodeBody(cr.resp, out, nil)
+		// case <-ctx.Done():
+		// 	// canceled, or timeouted
+		// 	c.HTTPClient.Transport.CancelRequest(req)
 	}
-
-	return c.decodeBody(resp, out, nil)
 }
 
 type ChanRes struct {
@@ -121,14 +148,14 @@ type ChanRes struct {
 	err  error
 }
 
-func (c *Client) doRequest(ch chan ChanRes, req *http.Request) {
-	defer close(ch)
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		ch <- ChanRes{resp, err}
-		// return c.handleError("HTTPClient.Do", err)
-	}
-}
+// func (c *Client) doRequest(ch chan ChanRes, req *http.Request) {
+// 	defer close(ch)
+// 	resp, err := c.HTTPClient.Do(req)
+// 	ch <- ChanRes{resp, err}
+// 	if err != nil {
+// 		// return c.handleError("HTTPClient.Do", err)
+// 	}
+// }
 
 func (c *Client) handleError(message string, err error) (*Res, error) {
 	err = fmt.Errorf("ReqNo:%d, Failed to %s, %w", c.ReqNo, message, err)

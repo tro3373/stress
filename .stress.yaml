@@ -18,5 +18,5 @@ Scenarios:
   - Name: stress
     # LoopNum: 200
     # Thread: 50
-    LoopNum: 2
-    Thread: 2
+    LoopNum: 1
+    Thread: 1
