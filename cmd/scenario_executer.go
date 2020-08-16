@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/tro3373/stress/cmd/backend"
 )
 
 type ScenarioExecuter struct {
@@ -50,15 +52,17 @@ func (s *ScenarioExecuter) Start() {
 func (s *ScenarioExecuter) startScenario(client *ApiClient) error {
 	log.Println(">> Starting scenario!")
 	res, err := client.GetContentsDetail()
-	if err != nil {
-		err = fmt.Errorf("Failed %s, %w", "GetContentsDetail", err)
-		return err
-	}
-	log.Println(">> Saving result")
-	return s.saveResult(res.ReqNo, *res.Out.(*string))
+	// if err != nil {
+	// 	err = fmt.Errorf("Failed %s, %w", "GetContentsDetail", err)
+	// 	return err
+	// }
+	// return s.saveResult(res.ReqNo, err*res.Out.(*string))
+	return s.saveResult(res, err)
 }
 
-func (s *ScenarioExecuter) saveResult(rqNum int, data string) error {
+func (s *ScenarioExecuter) saveResult(res *backend.Res, resErr error) error {
+	log.Println(">> Saving result")
+	rqNum := res.ReqNo
 	path := s.getOutPutPath(rqNum)
 	dir := filepath.Dir(path)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -72,6 +76,13 @@ func (s *ScenarioExecuter) saveResult(rqNum int, data string) error {
 		return fmt.Errorf("Failed to OpenFile %s, %w", path, err)
 	}
 	defer file.Close()
+	var data string
+	if resErr != nil {
+		data = resErr.Error()
+	} else {
+		// data = "ok"
+		data = res.Out.(string)
+	}
 	fmt.Fprintln(file, data)
 	return nil
 }

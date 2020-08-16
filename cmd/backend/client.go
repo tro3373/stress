@@ -169,8 +169,9 @@ func (cr ChanRes) String() string {
 // }
 
 func (c *Client) handleError(message string, err error) (*Res, error) {
+	res := &Res{c.ReqNo, -1, nil}
 	err = fmt.Errorf("ReqNo:%d, Failed to %s\n	error: %w", c.ReqNo, message, err)
-	return nil, err
+	return res, err
 }
 
 func (c *Client) decodeBody(resp *http.Response, out interface{}, f *os.File) (*Res, error) {
