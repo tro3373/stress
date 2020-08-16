@@ -102,6 +102,9 @@ func (c *Client) Request(ctx context.Context, reqMethod, reqPath string, reqBody
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	if timeout == 0 {
+		c.Logger.Printf(">>> Warning! abnormal timeout (value %d) specified.\n", timeout)
+	}
 	// see https://deeeet.com/writing/2016/07/22/context/
 	// see https://qiita.com/marnie_ms4/items/985d67c4c1b29e11fffc
 	// create cancellable ctx before Timeout
@@ -122,9 +125,9 @@ func (c *Client) Request(ctx context.Context, reqMethod, reqPath string, reqBody
 	ch := make(chan ChanRes)
 	go func() {
 		defer close(ch)
-		c.Logger.Println(">>> client doing!")
+		// c.Logger.Println(">>> client doing!")
 		resp, err := c.HTTPClient.Do(req)
-		c.Logger.Println(">>> client done!")
+		// c.Logger.Println(">>> client done!")
 		ch <- ChanRes{resp, err}
 	}()
 
@@ -133,7 +136,8 @@ func (c *Client) Request(ctx context.Context, reqMethod, reqPath string, reqBody
 	case cr := <-ch:
 		c.Logger.Println(">>> chan received!", cr)
 		if cr.err != nil {
-			return c.handleError("HTTPClient.Do error", err)
+			// c.Logger.Println(">>> cr.err", cr.err)
+			return c.handleError("HTTPClient.Do error", cr.err)
 		}
 		c.Logger.Println(">>> decode response!")
 		return c.decodeBody(cr.resp, out, nil)
@@ -150,9 +154,9 @@ type ChanRes struct {
 
 func (cr ChanRes) String() string {
 	if cr.err != nil {
-		return "[ChanRes] Abnomal"
+		return "[ChanRes] Abnomal state! Error is occured!"
 	}
-	return "[ChanRes] Nomal"
+	return "[ChanRes] Nomal state. No error."
 }
 
 // func (c *Client) doRequest(ch chan ChanRes, req *http.Request) {
@@ -165,7 +169,7 @@ func (cr ChanRes) String() string {
 // }
 
 func (c *Client) handleError(message string, err error) (*Res, error) {
-	err = fmt.Errorf("ReqNo:%d, Failed to %s, %w", c.ReqNo, message, err)
+	err = fmt.Errorf("ReqNo:%d, Failed to %s\n	error: %w", c.ReqNo, message, err)
 	return nil, err
 }
 

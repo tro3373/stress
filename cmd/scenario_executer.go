@@ -32,28 +32,29 @@ func (s *ScenarioExecuter) String() string {
 
 func (s *ScenarioExecuter) Start() {
 	defer s.wg.Done()
+	log.Println("> Starting", s.String())
 	client, err := NewApiClient(config)
 	if err != nil {
-		log.Println("Failed NewApiClient", err)
+		log.Println("> Failed NewApiClient", err)
 		return
 	}
 	for i := 0; i < s.loopNum; i++ {
 		err = s.startScenario(client)
 		if err != nil {
-			log.Println("Failed NewApiClient", err)
-			return
+			log.Println("> Failed NewApiClient", err)
+			// return
 		}
 	}
 }
 
 func (s *ScenarioExecuter) startScenario(client *ApiClient) error {
-	log.Println("start scenario!")
+	log.Println(">> Starting scenario!")
 	res, err := client.GetContentsDetail()
 	if err != nil {
 		err = fmt.Errorf("Failed %s, %w", "GetContentsDetail", err)
 		return err
 	}
-	log.Println("Saving result")
+	log.Println(">> Saving result")
 	return s.saveResult(res.ReqNo, *res.Out.(*string))
 }
 

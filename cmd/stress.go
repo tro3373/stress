@@ -33,7 +33,7 @@ func init() {
 }
 
 func start() {
-	log.Println(">> stress start")
+	log.Println("Starting stress test")
 	start := time.Now().Format("20060102_030405")
 
 	sc, err := config.GetScenarioConfig("stress")
@@ -48,7 +48,6 @@ func start() {
 		thNum++
 		wg.Add(1)
 		se := NewScenarioExecuter(start, thNum, sc.LoopNum, wg)
-		log.Println(">>> Starting ", se.String())
 		go se.Start()
 		if thNum >= sc.Thread {
 			break
@@ -56,5 +55,5 @@ func start() {
 	}
 	wg.Wait()
 
-	log.Println(">> stress done")
+	log.Println("Done stress test.")
 }
