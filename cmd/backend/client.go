@@ -197,7 +197,7 @@ func (c *Client) decodeBody(resp *http.Response, out interface{}, f *os.File) (*
 	}
 	defer resp.Body.Close()
 	body := string(byteArray)
-	res.Out = &body
+	res.Out = body
 	if !res.ValidStatus() {
 		log.Printf(">>> Invalid StatusCode body: %s\n", body)
 		return c.handleError("validate reps.StatusCode", fmt.Errorf("invalid status code: %d", resp.StatusCode))
