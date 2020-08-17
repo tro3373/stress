@@ -19,8 +19,8 @@ type ScenarioExecuter struct {
 }
 
 const (
-	threadNameF = "ThreadNo_%03d"
-	resFNameF   = "ReqNo_%03d.txt"
+	threadNameF = "ThreadNo_%05d"
+	resFNameF   = "ReqNo_%05d.%d"
 )
 
 func NewScenarioExecuter(start string, thNum, loopNum int, wg *sync.WaitGroup) *ScenarioExecuter {
