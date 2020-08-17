@@ -63,7 +63,8 @@ func (s *ScenarioExecuter) startScenario(client *ApiClient) error {
 func (s *ScenarioExecuter) saveResult(res *backend.Res, resErr error) error {
 	log.Println(">> Saving result")
 	rqNum := res.ReqNo
-	path := s.getOutPutPath(rqNum)
+	statusCode := res.StatusCode
+	path := s.getOutPutPath(rqNum, statusCode)
 	dir := filepath.Dir(path)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		err := os.MkdirAll(dir, 0755)
@@ -87,7 +88,7 @@ func (s *ScenarioExecuter) saveResult(res *backend.Res, resErr error) error {
 	return nil
 }
 
-func (s *ScenarioExecuter) getOutPutPath(rqNum int) string {
-	path := filepath.Join(config.LogDir, s.startTime, s.thName, fmt.Sprintf(resFNameF, rqNum))
+func (s *ScenarioExecuter) getOutPutPath(rqNum, statusCode int) string {
+	path := filepath.Join(config.LogDir, s.startTime, s.thName, fmt.Sprintf(resFNameF, rqNum, statusCode))
 	return path
 }

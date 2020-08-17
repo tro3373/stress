@@ -169,9 +169,13 @@ func (cr ChanRes) String() string {
 // }
 
 func (c *Client) handleError(message string, err error) (*Res, error) {
-	res := &Res{c.ReqNo, -1, nil}
-	err = fmt.Errorf("ReqNo:%d, Failed to %s\n	error: %w", c.ReqNo, message, err)
+	res := &Res{c.ReqNo, 999, nil}
+	err = c.wrapError(message, err)
 	return res, err
+}
+
+func (c *Client) wrapError(message string, err error) error {
+	return fmt.Errorf("ReqNo:%d, Failed to %s\n	error: %w", c.ReqNo, message, err)
 }
 
 func (c *Client) decodeBody(resp *http.Response, out interface{}, f *os.File) (*Res, error) {
@@ -186,21 +190,24 @@ func (c *Client) decodeBody(resp *http.Response, out interface{}, f *os.File) (*
 		}
 		decoder := json.NewDecoder(resp.Body)
 		if err := decoder.Decode(&res.Out); err != nil {
-			return c.handleError("decoder.Decode", err)
+			err = c.wrapError("decoder.Decode error.", err)
+			return res, err
 		}
 		return res, nil
 	}
 
 	byteArray, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return c.handleError("ioutil.ReadAll from resp.Body", err)
+		err = c.wrapError("ioutil.ReadAll from resp.Body error.", err)
+		return res, err
 	}
 	defer resp.Body.Close()
 	body := string(byteArray)
 	res.Out = body
 	if !res.ValidStatus() {
 		log.Printf(">>> Invalid StatusCode body: %s\n", body)
-		return c.handleError("validate reps.StatusCode", fmt.Errorf("invalid status code: %d", resp.StatusCode))
+		err = c.wrapError("validate reps.StatusCode error.", fmt.Errorf("invalid status code: %d", resp.StatusCode))
+		return res, err
 	}
 	return res, nil
 }
