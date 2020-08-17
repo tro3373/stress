@@ -131,15 +131,15 @@ func (c *Client) Request(ctx context.Context, reqMethod, reqPath string, reqBody
 		ch <- ChanRes{resp, err}
 	}()
 
-	c.Logger.Println(">>> Request Selecting")
+	// c.Logger.Println(">>> Request Selecting")
 	select {
 	case cr := <-ch:
-		c.Logger.Println(">>> chan received!", cr)
+		// c.Logger.Println(">>> chan received!", cr)
 		if cr.err != nil {
 			// c.Logger.Println(">>> cr.err", cr.err)
 			return c.handleError("HTTPClient.Do error", cr.err)
 		}
-		c.Logger.Println(">>> decode response!")
+		// c.Logger.Println(">>> decode response!")
 		return c.decodeBody(cr.resp, out, nil)
 		// case <-ctx.Done():
 		// 	// canceled, or timeouted
