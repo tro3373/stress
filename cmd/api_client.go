@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 
@@ -31,27 +32,30 @@ func NewApiClient(config Config) (*ApiClient, error) {
 	}
 	return &ApiClient{c, config.BaseUrl, config.TimeoutSec, config.ApiSpecs, config.RequestHeaders, 0}, nil
 }
-
-func (client *ApiClient) GetContentsList() (*backend.Res, error) {
-
-	spec, err := client.getApiSpec("ContentsList")
+func (client *ApiClient) requestInner(specKey string, ctx context.Context, reqBody io.Reader, out interface{}, timeout int) (*backend.Res, error) {
+	spec, err := client.getApiSpec(specKey)
 	if err != nil {
 		return nil, err
 	}
-
-	ctx := context.Background()
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	return client.bClient.Request(ctx, spec.Method, spec.Path, nil, nil, client.TimeoutSec)
+}
+
+func (client *ApiClient) LoginAccount() (*backend.Res, error) {
+
+	return client.requestInner("LoginAccount", nil, nil, nil, client.TimeoutSec)
+}
+
+func (client *ApiClient) GetContentsList() (*backend.Res, error) {
+
+	return client.requestInner("ContentsList", nil, nil, nil, client.TimeoutSec)
 }
 
 func (client *ApiClient) GetContentsDetail() (*backend.Res, error) {
 
-	spec, err := client.getApiSpec("ContentsDetail")
-	if err != nil {
-		return nil, err
-	}
-
-	ctx := context.Background()
-	return client.bClient.Request(ctx, spec.Method, spec.Path, nil, nil, client.TimeoutSec)
+	return client.requestInner("ContentsDetail", nil, nil, nil, client.TimeoutSec)
 }
 
 func (client *ApiClient) getApiSpec(key string) (*ApiSpec, error) {
