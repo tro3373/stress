@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"path"
@@ -31,21 +32,26 @@ type Header struct {
 }
 
 func NewClient(urlStr string, addHeaders *[]Header, insecure bool, logger *log.Logger) (*Client, error) {
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to new cookiejar, %w", err)
+	}
+
 	parsedURL, err := url.ParseRequestURI(urlStr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse url: %s, %w", urlStr, err)
+		return nil, fmt.Errorf("Failed to parse url: %s, %w", urlStr, err)
 	}
 	if logger == nil {
 		logger = log.New(ioutil.Discard, "", log.LstdFlags)
 	}
 	headers := buildHeaders(addHeaders)
-	hClient := buildHttpClient(insecure)
+	hClient := buildHttpClient(insecure, jar)
 	client := &Client{parsedURL, hClient, headers, logger, 0}
 	return client, nil
 }
 
-func buildHttpClient(insecure bool) *http.Client {
-	hClient := new(http.Client)
+func buildHttpClient(insecure bool, jar *cookiejar.Jar) *http.Client {
+	hClient := &http.Client{Jar: jar}
 	if !insecure {
 		return hClient
 	}
