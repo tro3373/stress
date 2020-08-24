@@ -51,7 +51,16 @@ func (s *ScenarioExecuter) Start() {
 
 func (s *ScenarioExecuter) startScenario(client *ApiClient) error {
 	log.Println(">> Starting scenario!")
-	res, err := client.GetContentsDetail()
+	res, err := client.LoginAccount("example", "example_pass")
+
+	if err != nil {
+		return err
+	}
+	err = s.saveResult(res, err)
+	if err != nil {
+		return err
+	}
+	res, err = client.GetContentsDetail()
 	// if err != nil {
 	// 	err = fmt.Errorf("Failed %s, %w", "GetContentsDetail", err)
 	// 	return err

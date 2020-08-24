@@ -15,6 +15,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -69,7 +70,7 @@ func buildHeaders(addHeaders *[]Header) *[]Header {
 	var version = "1.0.0"
 	userAgent := fmt.Sprintf("GoBackendClient/%s (%s)", version, runtime.Version())
 	headers := []Header{}
-	headers = append(headers, *NewHeader("User-Agent", userAgent), *NewHeader("Content-Type", "application/x-www-form-urlencoded"))
+	headers = append(headers, *NewHeader("User-Agent", userAgent))
 	headers = append(headers, *addHeaders...)
 	return &headers
 }
@@ -78,14 +79,27 @@ func NewHeader(key, val string) *Header {
 	return &Header{key, val}
 }
 
-func (c *Client) buildNewRequest(ctx context.Context, reqMethod, reqPath string, body io.Reader) (*http.Request, error) {
+func (c *Client) buildNewRequest(ctx context.Context, reqMethod, reqPath string, params interface{}, jsonRequest bool) (*http.Request, error) {
 
 	c.ReqNo++
 	u := *c.URL
 	u.Path = path.Join(c.URL.Path, reqPath)
 
-	// req, err := http.NewRequest(reqMethod, u.String(), body)
-	// req = req.WithContext(ctx)
+	var body io.Reader
+	if params != nil {
+		if jsonRequest {
+			params, err := json.Marshal(params)
+			if err != nil {
+				return nil, err
+			}
+			c.Logger.Printf(">>> params: %s\n", params)
+			body = bytes.NewBuffer(params)
+		} else {
+			body = strings.NewReader(params.(url.Values).Encode())
+		}
+	}
+
+	c.Logger.Printf(">>> Requesting.. method:%s, url:%s, body:%#+v\n", reqMethod, u.String(), body)
 	req, err := http.NewRequestWithContext(ctx, reqMethod, u.String(), body)
 	if err != nil {
 		return nil, err
@@ -97,11 +111,16 @@ func (c *Client) buildNewRequest(ctx context.Context, reqMethod, reqPath string,
 	for _, rh := range *c.Headers {
 		req.Header.Set(rh.Key, rh.Value)
 	}
+	rhValue := "application/x-www-form-urlencoded"
+	if jsonRequest {
+		rhValue = "application/json"
+	}
+	req.Header.Set("Content-Type", rhValue)
 
 	return req, nil
 }
 
-func (c *Client) Request(ctx context.Context, reqMethod, reqPath string, reqBody io.Reader, out interface{}, timeout int) (*Res, error) {
+func (c *Client) Request(ctx context.Context, reqMethod, reqPath string, params interface{}, jsonRequest bool, out interface{}, timeout int) (*Res, error) {
 
 	c.Logger.Println(">>> Request Start")
 
@@ -117,7 +136,7 @@ func (c *Client) Request(ctx context.Context, reqMethod, reqPath string, reqBody
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
 	defer cancel()
 
-	req, err := c.buildNewRequest(ctx, reqMethod, reqPath, reqBody)
+	req, err := c.buildNewRequest(ctx, reqMethod, reqPath, params, jsonRequest)
 	if err != nil {
 		return c.handleError("buildNewRequest", err)
 	}
