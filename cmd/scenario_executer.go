@@ -52,6 +52,7 @@ func (s *ScenarioExecuter) Start() {
 func (s *ScenarioExecuter) startScenario(client *ApiClient) error {
 	log.Println(">> Starting scenario!")
 	res, err := client.LoginAccount("example", "example_pass")
+	log.Println(">> Cookie", res.Cookies)
 
 	if err != nil {
 		return err

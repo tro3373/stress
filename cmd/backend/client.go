@@ -194,7 +194,7 @@ func (cr ChanRes) String() string {
 // }
 
 func (c *Client) handleError(message string, err error) (*Res, error) {
-	res := &Res{c.ReqNo, 999, nil}
+	res := &Res{c.ReqNo, 999, nil, nil}
 	err = c.wrapError(message, err)
 	return res, err
 }
@@ -205,7 +205,7 @@ func (c *Client) wrapError(message string, err error) error {
 
 func (c *Client) decodeBody(resp *http.Response, out interface{}, f *os.File) (*Res, error) {
 
-	res := &Res{c.ReqNo, resp.StatusCode, nil}
+	res := &Res{c.ReqNo, resp.StatusCode, nil, c.HTTPClient.Jar.Cookies(c.URL)}
 
 	if res.ValidStatus() && out != nil {
 		defer resp.Body.Close()
@@ -241,6 +241,7 @@ type Res struct {
 	ReqNo      int
 	StatusCode int
 	Out        interface{}
+	Cookies    []*http.Cookie
 }
 
 func (res Res) String() string {

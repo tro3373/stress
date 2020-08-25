@@ -57,14 +57,7 @@ func (client *ApiClient) LoginAccount(loginId, password string) (*backend.Res, e
 	params.Add("loginId", loginId)
 	params.Add("password", password)
 
-	// return client.requestInner("LoginAccount", nil, params, nil, client.TimeoutSec)
-	res, err := client.requestInner("LoginAccount", nil, params, nil, client.TimeoutSec)
-	if err != nil {
-		return nil, err
-	}
-	cookieUrl, err := url.Parse(config.BaseUrl)
-	log.Println(">> Cookie", cookieUrl, client.bClient.HTTPClient.Jar.Cookies(cookieUrl))
-	return res, nil
+	return client.requestInner("LoginAccount", nil, params, nil, client.TimeoutSec)
 }
 
 func (client *ApiClient) GetContentsList() (*backend.Res, error) {
