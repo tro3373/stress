@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"os"
 	"path"
 	"runtime"
 	"strings"
@@ -81,12 +80,11 @@ func NewHeader(key, val string) *Header {
 
 func (c *Client) buildNewRequest(ctx context.Context, reqMethod, reqPath string, params interface{}, jsonRequest bool) (*http.Request, error) {
 
-	c.ReqNo++
 	u := *c.URL
 	u.Path = path.Join(c.URL.Path, reqPath)
 
 	var body io.Reader
-	if params != nil {
+	if params != nil && reqMethod != "GET" {
 		if jsonRequest {
 			params, err := json.Marshal(params)
 			if err != nil {
@@ -99,11 +97,16 @@ func (c *Client) buildNewRequest(ctx context.Context, reqMethod, reqPath string,
 		}
 	}
 
-	c.Logger.Printf(">>> Requesting.. method:%s, url:%s, body:%#+v\n", reqMethod, u.String(), body)
+	c.Logger.Printf(">>> Building Request.. method:%s, url:%s, cookie:%+v, body:%+v\n",
+		reqMethod, u.String(), c.HTTPClient.Jar.Cookies(c.URL), body)
 	req, err := http.NewRequestWithContext(ctx, reqMethod, u.String(), body)
 	if err != nil {
 		return nil, err
 	}
+	if params != nil && reqMethod == "GET" {
+		req.URL.RawQuery = params.(url.Values).Encode()
+	}
+
 	// https://qiita.com/atijust/items/63676309c7b3d5df5948
 	req.Cancel = ctx.Done()
 
@@ -120,58 +123,6 @@ func (c *Client) buildNewRequest(ctx context.Context, reqMethod, reqPath string,
 	return req, nil
 }
 
-func (c *Client) Request(ctx context.Context, reqMethod, reqPath string, params interface{}, jsonRequest bool, out interface{}, timeout int) (*Res, error) {
-
-	c.Logger.Println(">>> Request Start")
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	if timeout == 0 {
-		c.Logger.Printf(">>> Warning! abnormal timeout (value %d) specified.\n", timeout)
-	}
-	// see https://deeeet.com/writing/2016/07/22/context/
-	// see https://qiita.com/marnie_ms4/items/985d67c4c1b29e11fffc
-	// create cancellable ctx before Timeout
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
-	defer cancel()
-
-	req, err := c.buildNewRequest(ctx, reqMethod, reqPath, params, jsonRequest)
-	if err != nil {
-		return c.handleError("buildNewRequest", err)
-	}
-
-	// resp, err := c.HTTPClient.Do(req)
-	// if err != nil {
-	// 	return c.handleError("HTTPClient.Do", err)
-	// }
-	// return c.handleError("HTTPClient.Do error", fmt.Errorf("Error: %s", ""))
-
-	ch := make(chan ChanRes)
-	go func() {
-		defer close(ch)
-		// c.Logger.Println(">>> client doing!")
-		resp, err := c.HTTPClient.Do(req)
-		// c.Logger.Println(">>> client done!")
-		ch <- ChanRes{resp, err}
-	}()
-
-	// c.Logger.Println(">>> Request Selecting")
-	select {
-	case cr := <-ch:
-		// c.Logger.Println(">>> chan received!", cr)
-		if cr.err != nil {
-			// c.Logger.Println(">>> cr.err", cr.err)
-			return c.handleError("HTTPClient.Do error", cr.err)
-		}
-		// c.Logger.Println(">>> decode response!")
-		return c.decodeBody(cr.resp, out, nil)
-		// case <-ctx.Done():
-		// 	// canceled, or timeouted
-		// 	c.HTTPClient.Transport.CancelRequest(req)
-	}
-}
-
 type ChanRes struct {
 	resp *http.Response
 	err  error
@@ -184,67 +135,120 @@ func (cr ChanRes) String() string {
 	return "[ChanRes] Nomal state. No error."
 }
 
-// func (c *Client) doRequest(ch chan ChanRes, req *http.Request) {
-// 	defer close(ch)
-// 	resp, err := c.HTTPClient.Do(req)
-// 	ch <- ChanRes{resp, err}
-// 	if err != nil {
-// 		// return c.handleError("HTTPClient.Do", err)
-// 	}
-// }
-
-func (c *Client) handleError(message string, err error) (*Res, error) {
-	res := &Res{c.ReqNo, 999, nil, nil}
-	err = c.wrapError(message, err)
-	return res, err
+type Request struct {
+	Ctx         context.Context
+	Method      string
+	Path        string
+	Params      interface{}
+	JsonRequest bool
+	Out         interface{}
+	Timeout     int
 }
 
-func (c *Client) wrapError(message string, err error) error {
-	return fmt.Errorf("ReqNo:%d, Failed to %s\n	error: %w", c.ReqNo, message, err)
-}
+func (c *Client) Do(req Request) *Res {
 
-func (c *Client) decodeBody(resp *http.Response, out interface{}, f *os.File) (*Res, error) {
+	// c.Logger.Println(">>> Request Start")
+	c.ReqNo++
+	startTime := time.Now()
+	res := &Res{ReqNo: c.ReqNo, StatusCode: 999, StartTime: startTime}
 
-	res := &Res{c.ReqNo, resp.StatusCode, nil, c.HTTPClient.Jar.Cookies(c.URL)}
-
-	if res.ValidStatus() && out != nil {
-		defer resp.Body.Close()
-		if f != nil {
-			resp.Body = ioutil.NopCloser(io.TeeReader(resp.Body, f))
-			defer f.Close()
-		}
-		decoder := json.NewDecoder(resp.Body)
-		if err := decoder.Decode(&res.Out); err != nil {
-			err = c.wrapError("decoder.Decode error.", err)
-			return res, err
-		}
-		return res, nil
+	if req.Ctx == nil {
+		req.Ctx = context.Background()
 	}
+	if req.Timeout == 0 {
+		c.Logger.Printf(">>> Warning! abnormal timeout (value %d) specified.\n", req.Timeout)
+	}
+	// see https://deeeet.com/writing/2016/07/22/context/
+	// see https://qiita.com/marnie_ms4/items/985d67c4c1b29e11fffc
+	// create cancellable ctx before Timeout
+	ctx, cancel := context.WithTimeout(req.Ctx, time.Duration(req.Timeout)*time.Second)
+	defer cancel()
 
-	byteArray, err := ioutil.ReadAll(resp.Body)
+	request, err := c.buildNewRequest(ctx, req.Method, req.Path, req.Params, req.JsonRequest)
 	if err != nil {
-		err = c.wrapError("ioutil.ReadAll from resp.Body error.", err)
-		return res, err
+		res.wrappedError("buildNewRequest", err)
+		return res
 	}
-	defer resp.Body.Close()
-	body := string(byteArray)
-	res.Out = body
-	if !res.ValidStatus() {
-		log.Printf(">>> Invalid StatusCode body: %s\n", body)
-		err = c.wrapError("validate reps.StatusCode error.", fmt.Errorf("invalid status code: %d", resp.StatusCode))
-		return res, err
+	res.Request = request
+
+	ch := make(chan ChanRes)
+	go func() {
+		defer close(ch)
+		resp, err := c.HTTPClient.Do(request)
+		ch <- ChanRes{resp, err}
+	}()
+
+	select {
+	case cr := <-ch:
+		res.EndTime = time.Now()
+		if cr.err != nil {
+			res.wrappedError("HTTPClient.Do error", cr.err)
+			return res
+		}
+		res.Response = cr.resp
+		res.StatusCode = cr.resp.StatusCode
+		res.decodeBody(req.Out)
+		break
+		// case <-ctx.Done():
+		// 	// canceled, or timeouted
+		// 	c.HTTPClient.Transport.CancelRequest(req)
 	}
-	return res, nil
+	return res
 }
 
 type Res struct {
 	ReqNo      int
 	StatusCode int
+	StartTime  time.Time
+	EndTime    time.Time
+	Err        error
+	Request    *http.Request
+	Response   *http.Response
 	Out        interface{}
-	Cookies    []*http.Cookie
+}
+
+func (res *Res) wrappedError(message string, err error) {
+	res.Err = fmt.Errorf("ReqNo:%d, Failed to %s\n	error: %w", res.ReqNo, message, err)
+}
+
+func (res *Res) decodeBody(out interface{}) {
+
+	if res.ValidStatus() && out != nil {
+		defer res.Response.Body.Close()
+		decoder := json.NewDecoder(res.Response.Body)
+		// if err := decoder.Decode(&res.Out); err != nil {
+		if err := decoder.Decode(out); err != nil {
+			res.wrappedError("decoder.Decode error.", err)
+			return
+		}
+		res.Out = out
+		return
+	}
+
+	byteArray, err := ioutil.ReadAll(res.Response.Body)
+	if err != nil {
+		res.wrappedError("ioutil.ReadAll from res.Response.Body error.", err)
+		return
+	}
+	defer res.Response.Body.Close()
+	body := string(byteArray)
+	res.Out = body
+	if !res.ValidStatus() {
+		log.Printf(">>> Invalid StatusCode body: %s\n", body)
+		res.wrappedError("validate reps.StatusCode error.", fmt.Errorf("invalid status code: %d", res.StatusCode))
+	}
 }
 
 func (res Res) String() string {
+	s := []string{fmt.Sprintf("ReqNo: %d", res.ReqNo)}
+	s = append(s, fmt.Sprintf("StartTime: %s", res.StartTime))
+	s = append(s, fmt.Sprintf("EndTime: %s", res.EndTime))
+	s = append(s, fmt.Sprintf("Time: %f s", res.EndTime.Sub(res.StartTime).Seconds()))
+	s = append(s, fmt.Sprintf("Request: %s", res.Request.URL.String()))
+	s = append(s, fmt.Sprintf("Method: %s", res.Request.Method))
+	s = append(s, fmt.Sprintf("StatusCode: %d", res.StatusCode))
+	s = append(s, fmt.Sprintf("Err: %v", res.Err))
+
 	switch res.Out.(type) {
 	case string:
 		outStr := res.Out.(string)
@@ -252,14 +256,18 @@ func (res Res) String() string {
 		err := json.Indent(&buf, []byte(outStr), "", "  ")
 		if err != nil {
 			log.Println(">> Failed to parse json", err)
-			return outStr
+			// return outStr
+			s = append(s, fmt.Sprintf("Failed to parse json(json.Indent) Err: %v", err))
+			s = append(s, fmt.Sprintf("Out: %s", outStr))
+			break
 		}
-		return fmt.Sprintf("ReqNo: %d, Out:%s", res.ReqNo, buf.String())
+		s = append(s, fmt.Sprintf("Out: %s", buf.String()))
+		break
 	default:
+		s = append(s, fmt.Sprintf("Out: %+v", res.Out))
 		break
 	}
-
-	return fmt.Sprintf("ReqNo: %d, Out:%s", res.ReqNo, res.Out)
+	return strings.Join(s, "\n")
 }
 
 func (res *Res) ValidStatus() bool {

@@ -1,2 +1,4 @@
 stress
 logs
+.serverless
+bin

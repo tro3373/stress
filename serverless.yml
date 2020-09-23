@@ -1,0 +1,50 @@
+service: tro3373-stress
+# frameworkVersion: '>=1.28.0 <2.0.0'
+
+custom:
+  defaultStage: dev
+  envs:
+    # ログ保持期間(暫定)
+    LOG_RETENTION_IN_DAYS: 365
+
+provider:
+  name: aws
+  runtime: go1.x
+  timeout: 900
+  memorySize: 2048
+  region: ap-northeast-1
+  stage: ${opt:stage, self:custom.defaultStage}
+  environment:
+    TZ: Asia/Tokyo
+    STAGE: ${self:provider.stage}
+    REGION: ${self:provider.region}
+  logRetentionInDays: ${self:custom.envs.LOG_RETENTION_IN_DAYS}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+        - logs:CreateLogGroup
+      Resource:
+        - "*"
+
+package:
+  exclude:
+    - ./**
+  include:
+    - ./bin/**
+    - ./.stress.yaml
+
+functions:
+  front:
+    handler: bin/front
+    events:
+      - http:
+          path: api/front
+          method: get
+          cors: true
+
+resources:
+  Resources:
+    ApiGatewayRestApi:
+      Type: AWS::ApiGateway::RestApi

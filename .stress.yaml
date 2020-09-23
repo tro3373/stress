@@ -15,8 +15,9 @@ Scenarios:
   - Name: addUser
     LoopNum: 100
     Thread: 10
-  - Name: stress
-    # LoopNum: 200
-    # Thread: 50
+  - Name: front
+    LoopNum: 1
+    Thread: 1
+  - Name: back
     LoopNum: 1
     Thread: 1

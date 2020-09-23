@@ -1,8 +1,10 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
 	"log"
+	"os"
+
+	"github.com/spf13/cobra"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
@@ -56,20 +58,22 @@ func initConfig() {
 		}
 
 		// Search config in home directory with name ".stress" (without extension).
-		viper.AddConfigPath(home)
 		viper.AddConfigPath(".")
+		viper.AddConfigPath(home)
+		viper.AddConfigPath("..")
 		viper.SetConfigName(".stress")
 	}
 	// viper.SetConfigType("yml")
 
 	viper.AutomaticEnv() // read in environment variables that match
 
+	log.Println(">>>>>> os.Args", os.Args)
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		log.Printf("> Loading config from %s.\n", viper.ConfigFileUsed())
 		if err := viper.Unmarshal(&config); err != nil {
 			log.Fatal(err)
 		}
-		log.Println("> Loaded config:", config)
+		// log.Println("> Loaded config:", config)
 	}
 }
